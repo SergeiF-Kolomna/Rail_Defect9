@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import PySimpleGUI as sg
 import sys
+import Find_threshold as ft
 
 # -*- coding: utf-8 -*-
 
@@ -13,11 +14,14 @@ frame_resizing = False
 image = None
 image_mini = None
 threshold_value = 207
+dark_spots = []
 etalon_line = 100
 scale_percent = 30 # percent of original size. To compress the image
 names = []
 dark_spots_dict = {}
 sum=0
+first_enter=False #  bool variable for once fill the list
+ipass = 0
 
 def calculate_distance(p1, p2):
     return (p2[0] - p1[0]) 
@@ -125,121 +129,123 @@ def get_dict_key(dict, value):
         if v == value:
             return k
     
-#*Рисуем интерфейс*
-#Open file window
-layout = [
-            [sg.Text('File'), sg.InputText(), sg.FileBrowse()],
-            [sg.Submit(), sg.Cancel()]
-         ]
-window = sg.Window('Open file to find defects', layout)
-
-#while True:
-event, values = window.read()
-#if event in (None, 'Exit', 'Cancel'):
-#    break
-
-if event == 'Submit':
-    image_path = values[0] 
-
-    #image_path = r'C:\Users\Фокин\source\repos\Rail_defect5\image_test2.jpg'
-    #image_path = r'E:\AAA\image_test2.jpg'
-    #image_path = 'E:\БББ\image_test2.jpg'
-    #
-
-    image = cv2.imread(image_path)
-    cv2.namedWindow("Image")
-    cv2.setMouseCallback("Image", mouse_callback)
-    cv2.createTrackbar("Threshold", "Image", threshold_value, 255, on_trackbar)
-        
-    #compress image
-    width = int(image.shape[1] * scale_percent / 100)
-    height = int(image.shape[0] * scale_percent / 100)
-    dim = (width, height)
-    image_mini = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
-    window.close()
+#*Рисуем интерфейс*   отправляем это в модуль--------------------------------------------------------
+##Open file window
+#layout = [
+#            [sg.Text('File'), sg.InputText(), sg.FileBrowse()],
+#            [sg.Submit(), sg.Cancel()]
+#         ]
+#window = sg.Window('Open file to find defects', layout)
+#
+#event, values = window.read()
+#
+#if event == 'Submit':
+#    image_path = values[0] 
+#
+#    #image_path = r'C:\Users\Фокин\source\repos\Rail_defect5\image_test2.jpg'
+#    #image_path = r'E:\AAA\image_test2.jpg'
+#    #image_path = 'E:\БББ\image_test2.jpg'
+#    #
+#
+#    image = cv2.imread(image_path)
+#    cv2.namedWindow("Image")
+#    cv2.setMouseCallback("Image", mouse_callback)
+#    cv2.createTrackbar("Threshold", "Image", threshold_value, 255, on_trackbar)
+#        
+#    #compress image
+#    width = int(image.shape[1] * scale_percent / 100)
+#    height = int(image.shape[0] * scale_percent / 100)
+#    dim = (width, height)
+#    image_mini = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+#    window.close()
+#    
+#    # I should put this variables to property of class
+#    first_enter=False #  bool variable for once fill the list
+#    ipass = 0       # variable for pass in listBox
+#    
+#    #*Рисуем интерфейс*   отправляем это в модуль--------------------------------------------------------
+threshold_value, image_mini, dark_spots, frame_start, frame_end, point1, point2 = ft.main()
     
-    # I should put this variables to proprty of class
-    first_enter=False #  bool variable for once fill the list
-    ipass = 0       # variable for pass in listBox
-    
-    cv2.imshow("Image", image_mini)
-    key = cv2.waitKey(0)
+#cv2.imshow("Image", image_mini)
+key = cv2.waitKey(0)
 
-    dark_spots = on_key(key)
-    if dark_spots:
+#dark_spots = on_key(key)
+if dark_spots:
 
-        #формируем словарь   ///этот кусок кода для отображения окошка со списком найденных дефектов
-        numbers = list(range(0, len(dark_spots)))
-        dark_spots_dict =dict(zip(numbers, dark_spots))
+    #формируем словарь   ///этот кусок кода для отображения окошка со списком найденных дефектов
+    numbers = list(range(0, len(dark_spots)))
+    dark_spots_dict =dict(zip(numbers, dark_spots))
 
-        for i in range(len(dark_spots_dict)):
-            names.append(str(i))
-        layout_lst = [[sg.Text('Rail',size=(20, 1), font='Lucida',justification='left')],
-                        [sg.Listbox(names, select_mode='single', key='list1', size=(30, 6))],
-                        [sg.Button('Remove', font=('Times New Roman', 12)),sg.Button('Cancel', font=('Times New Roman',12)), 
-                         sg.Button('Back', font=('Times New Roman',12)), sg.Button('Next', font=('Times New Roman',12)), sg.Button('Calculate', font=('Times New Roman',12))]]
-        window_list=sg.Window('Defects', layout_lst)
-        first_enter =True
+    for i in range(len(dark_spots_dict)):
+        names.append(str(i))
+    layout_lst = [[sg.Text('Rail',size=(20, 1), font='Lucida',justification='left')],
+                    [sg.Listbox(names, select_mode='single', key='list1', size=(30, 6))],
+                    [sg.Button('Remove', font=('Times New Roman', 12)),sg.Button('Cancel', font=('Times New Roman',12)), 
+                        sg.Button('Back', font=('Times New Roman',12)), sg.Button('Next', font=('Times New Roman',12)), sg.Button('Calculate', font=('Times New Roman',12))]]
+    window_list=sg.Window('Defects', layout_lst)
+    first_enter =True
         
-        while True:
-            if key == ord("q"):
-                break
-            sum=0
-            e,v=window_list.read()
-            #if  v['list1'] == [] or v['list1'] == ['0']:
-            #    v['list1']=str(ipass)
-            print(e, v, ' ipass > ', ipass)
+    while True:
+        if key == ord("q"):
+            break
+        sum=0
+        e,v=window_list.read()
+        if  v['list1'] == [] or v['list1'] == ['0']:
+            v['list1']=str(ipass)
+        print(e, v, ' ipass > ', ipass)
 
+        temp_list=list(dark_spots_dict.keys())
+        v['list1']=str(temp_list[int(ipass)])
+
+        if e == 'Remove':
+            names.remove(v['list1'])
+            dark_spots_dict.pop(int(v['list1']))
+            window_list['list1'].update(names)
             temp_list=list(dark_spots_dict.keys())
-            v['list1']=str(temp_list[int(ipass)])
-
-            if e == 'Remove':
-                names.remove(v['list1'])
-                dark_spots_dict.pop(int(v['list1']))
-                window_list['list1'].update(names)
-                
-                temp_list=list(dark_spots_dict.keys())
-                #v['list1']=str(temp_list[int(ipass)])
-                ipass=int(v['list1'])
-                temp2_image = image_mini.copy()
-                for new_spot_list in dark_spots_dict:
-                    (x, y, w, h, dimensions) = dark_spots_dict[new_spot_list]
-                    cv2.rectangle(temp2_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (255, 175, 0), 2)
-                
-            elif e == 'Cancel':
-                window_list.close()
-                break
-            elif e == 'Next':
+            temp2_image = image_mini.copy()
+            for new_spot_list in dark_spots_dict:
+                (x, y, w, h, dimensions) = dark_spots_dict[new_spot_list]
+                cv2.rectangle(temp2_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (255, 175, 0), 2)
+            ipass-=1
+        elif e == 'Cancel':
+            window_list.close()
+            break
+        elif e == 'Next':
+            if ipass<len(dark_spots_dict)-1:
                 ipass+=1
-                temp_list=list(dark_spots_dict.keys())
-                v['list1']=str(temp_list[ipass])
-            elif e == 'Back':
-                ipass-=1
-                temp_list=list(dark_spots_dict.keys())
-                v['list1']=str(temp_list[ipass])
-            elif e == 'Calculate':
-                for i in dark_spots_dict:
-                    sum += dark_spots_dict[i][4]
-                cv2.putText(temp2_image, f"Summary Square: {sum:.5f} cm^2", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
-
-            #  /// окончание куска кода для  отображения окошка со списком найденных дефектов
+            else:
+                ipass=0
             temp_list=list(dark_spots_dict.keys())
             v['list1']=str(temp_list[ipass])
-            #(x, y, w, h, dimensions) = dark_spots_dict[[temp_list[int(ipass)]][0]]
-            (x, y, w, h, dimensions) = dark_spots_dict[int(v['list1'])]
-            temp_image = image_mini.copy()
-            cv2.rectangle(temp_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (0, 0, 255), 2)
+        elif e == 'Back':
+            if ipass>1:
+                ipass-=1
+            else:
+                ipass=len(dark_spots_dict)-1
+            temp_list=list(dark_spots_dict.keys())
+            v['list1']=str(temp_list[ipass])
+        elif e == 'Calculate':
+            for i in dark_spots_dict:
+                sum += dark_spots_dict[i][4]
+            cv2.putText(temp2_image, f"Summary Square: {sum:.5f} cm^2", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
 
-            # Add dimensions text to the dark spot
-            width_cm = w / (calculate_distance(point1, point2)/etalon_line)
-            height_cm = h / (calculate_distance(point1, point2)/etalon_line)
-            cv2.putText(temp_image, f"Square: {dimensions:.5f} cm^2", (x + frame_start[0], y + frame_start[1] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            cv2.putText(temp_image, f"Width: {width_cm:.5f} cm", (x + frame_start[0], y + frame_start[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            cv2.putText(temp_image, f"Height: {height_cm:.5f} cm", (x + frame_start[0], y + frame_start[1] + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        #  /// окончание куска кода для  отображения окошка со списком найденных дефектов
+        temp_list=list(dark_spots_dict.keys())
+        v['list1']=str(temp_list[ipass])
+        (x, y, w, h, dimensions) = dark_spots_dict[int(v['list1'])]
+        temp_image = image_mini.copy()
+        cv2.rectangle(temp_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (0, 0, 255), 2)
 
-            cv2.imshow("Image", temp_image)
-            try:
-                cv2.imshow("temp2_image", temp2_image)
-            except: pass
+        # Add dimensions text to the dark spot
+        width_cm = w / (calculate_distance(point1, point2)/etalon_line)
+        height_cm = h / (calculate_distance(point1, point2)/etalon_line)
+        cv2.putText(temp_image, f"Square: {dimensions:.5f} cm^2", (x + frame_start[0], y + frame_start[1] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        cv2.putText(temp_image, f"Width: {width_cm:.5f} cm", (x + frame_start[0], y + frame_start[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        cv2.putText(temp_image, f"Height: {height_cm:.5f} cm", (x + frame_start[0], y + frame_start[1] + h + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+        cv2.imshow("Image", temp_image)
+        try:
+            cv2.imshow("temp2_image", temp2_image)
+        except: pass
 
 cv2.destroyAllWindows()

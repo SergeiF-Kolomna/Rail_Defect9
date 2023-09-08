@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Find_threshold", "Find_threshold.pyproj", "{FFC658BD-6F14-40C4-8DA1-5C8F6229EA79}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FFC658BD-6F14-40C4-8DA1-5C8F6229EA79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFC658BD-6F14-40C4-8DA1-5C8F6229EA79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {72D334A5-8300-4551-9368-E959189057EB}
+	EndGlobalSection
+EndGlobal
