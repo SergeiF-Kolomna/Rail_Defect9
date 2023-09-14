@@ -135,6 +135,10 @@ def main():
         cv2.setMouseCallback("Image", mouse_callback)
         cv2.createTrackbar("Threshold", "Image", threshold_value, 255, on_trackbar)
 
+        #for dark_spot in dark_spots:
+        #    (x, y, w, h, dimensions) = dark_spot
+        #    cv2.rectangle(image_mini, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
         window.close()
     
         # I should put this variables to property of class
@@ -161,7 +165,7 @@ def main():
             if key == ord("a") and frame_start and frame_end:
                 on_key(key)
 
-        return threshold_value, image_mini, dark_spots, frame_start, frame_end, point1, point2
+        return threshold_value, image_mini, dark_spots, frame_start, frame_end, point1, point2, values[0]
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":

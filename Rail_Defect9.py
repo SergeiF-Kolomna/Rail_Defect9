@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
-import PySimpleGUI as sg
+import PySimpleGUI as sg        # интерфейс
 import sys
-import Find_threshold as ft
+import Find_threshold as ft     # самописный
+import os       #для извлечения имени файла из пути
 
 # -*- coding: utf-8 -*-
 
@@ -119,10 +120,10 @@ def listbox_drawing(lst):
         window['-MSG-'].update(msg)
         #window_list.close()
 
-def on_trackbar(val):
-    global threshold_value
-    threshold_value = val
-    cv2.imshow("Image", image_mini)
+#def on_trackbar(val):
+#    global threshold_value
+#    threshold_value = val
+#    cv2.imshow("Image", image_mini)
 
 def get_dict_key(dict, value):
     for k, v in dict.items():
@@ -164,7 +165,10 @@ def get_dict_key(dict, value):
 #    ipass = 0       # variable for pass in listBox
 #    
 #    #*Рисуем интерфейс*   отправляем это в модуль--------------------------------------------------------
-threshold_value, image_mini, dark_spots, frame_start, frame_end, point1, point2 = ft.main()
+try:
+    threshold_value, image_mini, dark_spots, frame_start, frame_end, point1, point2, file_path = ft.main()
+except:
+    pass
     
 #cv2.imshow("Image", image_mini)
 key = cv2.waitKey(0)
@@ -184,7 +188,12 @@ if dark_spots:
                         sg.Button('Back', font=('Times New Roman',12)), sg.Button('Next', font=('Times New Roman',12)), sg.Button('Calculate', font=('Times New Roman',12))]]
     window_list=sg.Window('Defects', layout_lst)
     first_enter =True
-        
+
+    ttemp_image = image_mini.copy()
+    for dark_spot in dark_spots:
+        (x, y, w, h, dimensions) = dark_spot
+        cv2.rectangle(ttemp_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (0, 255, 0), 2)
+    file_name= os.path.basename(file_path)
     while True:
         if key == ord("q"):
             break
@@ -227,15 +236,28 @@ if dark_spots:
         elif e == 'Calculate':
             for i in dark_spots_dict:
                 sum += dark_spots_dict[i][4]
-            cv2.putText(temp2_image, f"Summary Square: {sum:.5f} cm^2", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+            try:
+                cv2.putText(temp2_image, f"Summary Square: {sum:.5f} cm^2", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+            except:
+                temp2_image = image_mini.copy()
+                for new_spot_list in dark_spots_dict:
+                    (x, y, w, h, dimensions) = dark_spots_dict[new_spot_list]
+                    cv2.rectangle(temp2_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (255, 175, 0), 2)
+                cv2.putText(temp2_image, f"Summary Square: {sum:.5f} cm^2", (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+            my_txt_file_name = file_name.replace('.jpg', '.txt')
+            my_txt_file = open('E:/AAA/Defect19/' + my_txt_file_name, "w+")
+            my_txt_file.write('Имя файла ' + '\t' + ' Обнаружено дефектов ' + '\t' + ' Общая площадь дефектов,кв.см. ' + '\t' + ' Средняя площадь дефекта,кв.см. ' + '\n')
+            my_txt_file.write(my_txt_file_name + '\t' + str(len(dark_spots_dict)) + '\t' + str(sum) + "\t" + str(sum/len(dark_spots_dict)))
+            my_txt_file.close()
 
         #  /// окончание куска кода для  отображения окошка со списком найденных дефектов
         temp_list=list(dark_spots_dict.keys())
         v['list1']=str(temp_list[ipass])
         (x, y, w, h, dimensions) = dark_spots_dict[int(v['list1'])]
-        temp_image = image_mini.copy()
-        cv2.rectangle(temp_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (0, 0, 255), 2)
 
+        temp_image = ttemp_image.copy()
+        cv2.rectangle(temp_image, (x + frame_start[0], y + frame_start[1]), (x + frame_start[0] + w, y + frame_start[1] + h), (0, 0, 255), 2)
+        
         # Add dimensions text to the dark spot
         width_cm = w / (calculate_distance(point1, point2)/etalon_line)
         height_cm = h / (calculate_distance(point1, point2)/etalon_line)
